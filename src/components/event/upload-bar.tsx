@@ -22,17 +22,6 @@ export function UploadBar({ eventId }: { eventId: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
-  function handleButtonClick() {
-    console.log("Add Photos tapped")
-    // Synchronous native file picker trigger directly inside user gesture
-    if (fileInputRef.current) {
-      console.log("[UploadBar] Synchronously calling fileInputRef.current.click()")
-      fileInputRef.current.click()
-    } else {
-      console.warn("[UploadBar] fileInputRef is not ready")
-    }
-  }
-
   async function processUpload(files: File[], uploaderName: string) {
     if (!files || files.length === 0) return
 
@@ -162,29 +151,16 @@ export function UploadBar({ eventId }: { eventId: string }) {
 
   return (
     <>
-      {/* 
-        File input rendered with sr-only / opacity-0 / absolute / pointer-events-none 
-        instead of `hidden` or `display: none` so mobile Safari / Android WebKit do not suppress .click()
-      */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleFileChange}
-        className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none"
-        tabIndex={-1}
-        aria-hidden="true"
-      />
-
       {/* Optional Name Prompt Modal shown AFTER photos are selected */}
       {showNamePrompt && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 sm:items-center">
+          {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-md"
             onClick={handleSkipName}
           />
-          <div className="relative w-full max-w-sm animate-slide-up rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+          {/* Dialog Container with safe bottom margin on mobile */}
+          <div className="relative w-full max-w-sm animate-slide-up rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl mb-2 sm:mb-0">
             <h3 className="mb-2 text-lg font-semibold text-white">
               Who is sharing these photos?
             </h3>
@@ -219,32 +195,55 @@ export function UploadBar({ eventId }: { eventId: string }) {
         </div>
       )}
 
-      {/* Sticky Bottom Bar with z-50 and pointer-events-auto */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-auto flex justify-center p-4 pb-6">
-        <button
-          type="button"
-          onClick={handleButtonClick}
-          disabled={uploading}
-          className="flex items-center gap-2.5 rounded-full border border-zinc-700 bg-zinc-900/90 px-6 py-3.5 text-base font-semibold text-white shadow-2xl backdrop-blur-xl transition-all hover:border-zinc-500 hover:bg-zinc-800 active:scale-95 disabled:opacity-70 cursor-pointer"
-        >
-          {uploading ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Uploading {progress}/{total}...
-            </>
-          ) : done ? (
-            <>
-              <Check className="h-5 w-5 text-emerald-400" />
-              Uploaded!
-            </>
-          ) : (
-            <>
-              <Camera className="h-5 w-5" />
-              Add Photos
-            </>
-          )}
-        </button>
-      </div>
+      {/* 
+        Sticky Bottom Bar with z-30:
+        Completely hidden when the name modal is open to avoid obscuring modal actions.
+      */}
+      {!showNamePrompt && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-auto flex justify-center p-4 pb-6">
+          <label
+            htmlFor="jusnap-photo-input"
+            onClick={() => console.log("Add Photos tapped")}
+            className={`flex items-center gap-2.5 rounded-full border border-zinc-700 bg-zinc-900/90 px-6 py-3.5 text-base font-semibold text-white shadow-2xl backdrop-blur-xl transition-all hover:border-zinc-500 hover:bg-zinc-800 active:scale-95 cursor-pointer select-none ${
+              uploading ? "opacity-70 pointer-events-none" : ""
+            }`}
+          >
+            {/* 
+              Semantic native input linked to label.
+              Directly triggered by native browser behavior on user tap.
+            */}
+            <input
+              id="jusnap-photo-input"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileChange}
+              disabled={uploading}
+              className="sr-only opacity-0 absolute w-0 h-0 pointer-events-none"
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+
+            {uploading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Uploading {progress}/{total}...
+              </>
+            ) : done ? (
+              <>
+                <Check className="h-5 w-5 text-emerald-400" />
+                Uploaded!
+              </>
+            ) : (
+              <>
+                <Camera className="h-5 w-5" />
+                Add Photos
+              </>
+            )}
+          </label>
+        </div>
+      )}
     </>
   )
 }
